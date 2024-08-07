@@ -21,7 +21,8 @@ export async function add_points_eod(actions: string[]){
         acc = acc + action;
         return acc;
     }, '')
-    await ModifyQuery(`INSERT INTO track_points (actions, points_for_day) VALUES (?,?);`, [actions_string, total_points]);
+    const [max_day] = await SelectQuery<{day:number}>("SELECT max(day) as day from track_points");
+    await ModifyQuery(`INSERT INTO track_points VALUES (?,?,?);`, [max_day.day+1, actions_string, total_points]); //increment day value
 
 }
 
@@ -50,9 +51,26 @@ export async function update_action_points(actions: string[]){
     }
 }
 
+function dayToDate(day: number){
+    const start = new Date('2024-06-17');
+    const resultDate = new Date(start);
+    console.log(start, day)
+    resultDate.setDate(start.getDate() + day);
+    return resultDate;
+}
 
-const day_points = ['B', 'B'];
+async function getLastUpdatedDate(){
+    const [dayNo] = await SelectQuery<{day:number}>("select max(day) as day from track_points");
+    const date = dayToDate(dayNo.day);
+    console.log("Last Updated: ", date.toDateString())
+}
 
-add_points_eod(day_points)
-update_action_points(day_points)
-console.log("done")
+
+export default async function handler(actionsOfDay: string){
+    const day_points: string[] = actionsOfDay.split("");
+    console.log("Adding points: ", day_points)
+    await add_points_eod(day_points)
+    await update_action_points(day_points)
+    await getLastUpdatedDate()
+}
+
