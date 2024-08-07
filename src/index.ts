@@ -44,6 +44,9 @@ const job = new CronJob(
     const action_data = JSON.parse(fs.readFileSync("./src/usercache/useractions.json", "utf-8"));
 		console.log('Starting cron job for actions', action_data.data);
     await add_points(action_data.data)
+
+    //reset user actions for the day
+    fs.writeFileSync("./src/usercache/useractions.json", JSON.stringify({}));
     console.log('Cron job completed')
 	}, // onTick
 	null, // onComplete
