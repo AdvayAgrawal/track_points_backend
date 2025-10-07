@@ -1,0 +1,35 @@
+version: '3'
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"    # Backend
+      - "5173:5173"    # Frontend
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_DATABASE=track_points_app
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root_password
+      - TZ=Asia/Kolkata
+    depends_on:
+      - mysql
+    restart: always
+    volumes:
+      - ./data.json:/data.json
+      - ./cache/useractions.json:/app/backend/src/usercache/useractions.json
+
+  mysql:
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_DATABASE: track_points_app
+      MYSQL_ROOT_PASSWORD: root_password
+      TZ: Asia/Kolkata
+      
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:

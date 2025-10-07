@@ -1,1 +1,74 @@
-node_modules
+# ----------------------------
+# Node.js
+# ----------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build outputs
+dist/
+build/
+.cache/
+.tmp/
+*.tsbuildinfo
+
+# ----------------------------
+# Frontend (Vite / React / Angular)
+# ----------------------------
+track-points-app/dist/
+track-points-app/.vite/
+track-points-app/node_modules/
+track-points-app/.DS_Store
+
+# ----------------------------
+# Backend (TypeScript / JS)
+# ----------------------------
+backend/node_modules/
+backend/dist/
+backend/.env
+backend/*.log
+backend/.tsbuildinfo
+
+# ----------------------------
+# Python
+# ----------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
+venv/
+env/
+.venv/
+pip-log.txt
+
+# ----------------------------
+# Docker / Compose
+# ----------------------------
+*.pid
+*.log
+*.pid.lock
+.cache/
+.cache-loader/
+docker-compose.override.yml
+.docker/
+
+# ----------------------------
+# Database / Data Files
+# ----------------------------
+backup.sql
+data.json
+cache/
+*.sqlite
+*.db
+*.db-journal
