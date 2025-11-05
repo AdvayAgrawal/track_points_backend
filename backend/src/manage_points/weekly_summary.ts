@@ -32,8 +32,9 @@ export async function getWeeklySummary(action: string) {
     const result: { weekStart: string; actionCount: number }[] = [];
     for (let d = new Date(minDate); d <= maxDate; d.setDate(d.getDate() + 7)) {
         const key = d.toISOString().slice(0, 10); // YYYY-MM-DD
+        const dateHumanReadable = d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
         result.push({
-        weekStart: key,
+        weekStart: dateHumanReadable,
         actionCount: weekMap.get(key) ?? 0,
         });
     }
