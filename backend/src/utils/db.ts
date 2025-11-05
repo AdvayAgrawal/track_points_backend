@@ -1,5 +1,7 @@
+import dotenv from "dotenv";
 import { ResultSetHeader } from "mysql2";
 import mysql from "mysql2/promise";
+dotenv.config(); // load .env into process.env
 
 const pool = mysql.createPool({
     host: process.env.MYSQL_HOST,

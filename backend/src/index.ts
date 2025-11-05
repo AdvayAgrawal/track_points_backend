@@ -3,6 +3,7 @@ import { CronJob } from 'cron';
 import express from 'express';
 import fs from 'fs';
 import add_points, { actionsOfDayInput, dateToDay, dayToDate, getLastDay } from './manage_points/add_points';
+import { getWeeklySummary } from './manage_points/weekly_summary';
 import { fetchPointSystem } from './tables/point_system';
 import { fetchTargets } from './tables/targets';
 import { fetchTotalActionPoints } from './tables/total_action_points';
@@ -33,6 +34,16 @@ app.post('/update_current_points', (req, res) => {
 app.get('/uploaded_actions', (req, res) => {
   const data = JSON.parse(fs.readFileSync("./src/usercache/useractions.json", "utf-8"));
   res.send(data);
+})
+
+app.get('/weekly_summary', async (req, res) => {
+  const action = req.query.action as string;
+  try {
+    const weekly_summary = await getWeeklySummary(action);
+    res.send(weekly_summary);
+  } catch (error) {
+    res.status(500).send({ error: `Failed to fetch weekly summary for ${action}` });
+  }
 })
 
 

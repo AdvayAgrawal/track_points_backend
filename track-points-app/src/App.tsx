@@ -1,6 +1,6 @@
 import { FC, useState } from 'react';
 import { QueryClient, QueryClientProvider, useQuery } from 'react-query';
-import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useParams } from "react-router-dom";
 import './App.css';
 import { ActionButton } from './components/ActionButton';
 import { NavBar } from './components/NavBar';
@@ -17,9 +17,11 @@ const queryClient = new QueryClient({
   },
 });
 
+const backendPort = 3000;
+
 
 const getPointSystem = async() => {
-  const response = await fetch('http://localhost:3000/tables/point_system', {
+  const response = await fetch(`http://localhost:${backendPort}/tables/point_system`, {
     method: 'GET',
     headers: {
       "Content-Type": "application/json"
@@ -39,7 +41,7 @@ const getPointSystem = async() => {
 }
 
 const getTargets = async () => {
-  const response = await fetch('http://localhost:3000/tables/targets', {
+  const response = await fetch(`http://localhost:${backendPort}/tables/targets`, {
     method: 'GET',
     headers: {
       "Content-Type": "application/json"
@@ -52,7 +54,7 @@ const getTargets = async () => {
 }
 
 const getTotalPoints = async () => {
-  const response = await fetch('http://localhost:3000/tables/total_points', {
+  const response = await fetch(`http://localhost:${backendPort}/tables/total_points`, {
     method: 'GET',
     headers: {
       "Content-Type": "application/json"
@@ -65,7 +67,7 @@ const getTotalPoints = async () => {
 }
 
 const getUploadedData = async() => {
-  const response = await fetch("http://localhost:3000/uploaded_actions", {
+  const response = await fetch(`http://localhost:${backendPort}/uploaded_actions`, {
     method: 'GET',
     headers: {
       "Content-Type": "application/json"
@@ -76,6 +78,20 @@ const getUploadedData = async() => {
     return fetchdata;
   }
   return {}
+}
+
+const getWeeklySummary = async(action: string) => {
+  const response = await fetch(`http://localhost:${backendPort}/weekly_summary?action=${action}`, {
+    method: 'GET',
+    headers: {
+      "Content-Type": "application/json"
+    }
+  });
+  if (response.ok){
+    const fetchdata = await response.json();
+    return fetchdata;
+  }
+  return []
 }
 
 
@@ -116,7 +132,7 @@ const AppComponent: FC = () => {
 
   async function submit(){
     console.log("submitting", total_actions, total_actions.length)
-    const response = await fetch("http://localhost:3000/update_current_points", {
+    const response = await fetch(`http://localhost:${backendPort}/update_current_points`, {
       method: 'POST',
       body: JSON.stringify({ actions: uploadedData + total_actions, thought: thought, points: total_points}),
       headers: {
@@ -134,7 +150,7 @@ const AppComponent: FC = () => {
   }
 
   async function reset(){
-    const response = await fetch("http://localhost:3000/update_current_points", {
+    const response = await fetch(`http://localhost:${backendPort}/update_current_points`, {
       method: 'POST',
       body: JSON.stringify({ actions: "", thought: "", points: 0}),
       headers: {
@@ -259,6 +275,107 @@ const TargetComponent: FC = () => {
   )
 }
 
+export const WeeklySummaryComponent: FC = () => {
+  const { action } = useParams<{ action: string }>();
+
+  const { data: weeklyData, status } = useQuery<{ weekStart: string; actionCount: number }[]>({
+    queryKey: ["summary"],
+    queryFn: () => getWeeklySummary(action ?? "A"),
+  });
+  console.log("Weekly data:", weeklyData);
+
+  const [hoverInfo, setHoverInfo] = useState<{ week: string; x: number; y: number } | null>(null);
+
+  if (status === "loading") return <div>Loading...</div>;
+  if (!weeklyData) return <div>No data</div>;
+
+  // Helper to pick color based on count
+  const getColor = (count: number) => {
+    if (count === 0) return "#3f3f46"; // gray
+    if (count <= 2) return "#84cc16"; // lime-ish
+    if (count <= 4) return "#65a30d"; // yellow-green
+    if (count <= 6) return "#22c55e"; // bright green
+    return "#4ade80"; // very bright green
+  };
+
+  const getBoxShadow = (count: number) => {
+    if (count >= 7)
+      // ✅ Symmetrical glow + subtle base shadow to anchor the box visually
+      return "0 0 15px 4px rgba(74, 222, 128, 0.8), 0 2px 6px rgba(0,0,0,0.25)";
+    // ✅ Consistent baseline shadow for all others
+    return "0 2px 6px rgba(0,0,0,0.25)";
+  };
+
+  return (
+    <div style={{ position: "relative", padding: "20px", color: "white" }}>
+      <h2 style={{ fontSize: "20px", fontWeight: "bold", marginBottom: "12px" }}>Weekly Summary</h2>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(8, 40px)",
+          gap: "8px",
+        }}
+      >
+        {weeklyData.map(({ weekStart, actionCount }) => (
+          <div
+            key={weekStart}
+            style={{
+              width: "40px",
+              height: "40px",
+              backgroundColor: getColor(actionCount),
+              boxShadow: getBoxShadow(actionCount),
+              transform: actionCount >= 7 ? "scale(1.03)" : "scale(1)",
+              borderRadius: "6px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "13px",
+              fontWeight: 500,
+              cursor: "pointer",
+              transition: "transform 0.1s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
+            onMouseMove={(e) => {
+              setHoverInfo({
+                week: weekStart,
+                x: e.clientX + 10, // offset near mouse
+                y: e.clientY + 10,
+              });
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "scale(1.0)";
+              setHoverInfo(null);
+            }}
+          >
+            {actionCount}
+          </div>
+        ))}
+      </div>
+
+      {hoverInfo && (
+        <div
+          style={{
+            position: "fixed",
+            left: hoverInfo.x,
+            top: hoverInfo.y,
+            backgroundColor: "rgba(0,0,0,0.85)",
+            color: "white",
+            padding: "4px 8px",
+            borderRadius: "4px",
+            fontSize: "12px",
+            pointerEvents: "none",
+            whiteSpace: "nowrap",
+            zIndex: 10,
+          }}
+        >
+          {hoverInfo.week}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Layout: FC = () => {
   return (
     <div>
@@ -275,7 +392,8 @@ const App: FC = () => {
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<AppComponent />} />
-            <Route path="dashboard" element={<AppComponent />} />
+            <Route path="dashboard" element={<Navigate to="I" replace />} />
+            <Route path="dashboard/:action" element={<WeeklySummaryComponent />} />
             <Route path="targets" element={<TargetComponent />} />
           </Route>
         </Routes>
